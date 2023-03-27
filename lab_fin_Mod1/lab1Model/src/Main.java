@@ -1,0 +1,194 @@
+import java.util.Scanner;
+import java.math.*;
+
+public class Main {
+    public static int size;
+    public static double[] result = new double[size];
+    public static void printRowEchelonForm(double[][] A, double[] B)
+    {
+        int N = B.length;
+        System.out.println("\nRow Echelon form : ");
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+                System.out.printf("%.3f ", A[i][j]);
+            System.out.printf("| %.3f\n", B[i]);
+        }
+        System.out.println();
+    }
+    public static void printSolution(double[] sol)
+    {
+        int N = sol.length;
+        System.out.println("\nSolution : ");
+        for (int i = 0; i < N; i++)
+            System.out.printf("%.3f ", sol[i]);
+        System.out.println();
+    }
+    public static void solve(double[][] A, double[] B)
+    {
+        int N = B.length;
+
+        for (int k = 0; k < N; k++)
+        {
+            int max = k;
+            for (int i = k + 1; i < N; i++)
+                if (Math.abs(A[i][k]) > Math.abs(A[max][k]))
+                    max = i;
+
+            double[] temp = A[k];
+            A[k] = A[max];
+            A[max] = temp;
+            double t = B[k];
+            B[k] = B[max];
+            B[max] = t;
+
+
+            for (int i = k + 1; i < N; i++)
+            {
+                double factor = A[i][k] / A[k][k];
+                B[i] -= factor * B[k];
+                for (int j = k; j < N; j++)
+                    A[i][j] -= factor * A[k][j];
+            }
+        }
+        printRowEchelonForm(A, B);
+        double[] solution = new double[N];
+        for (int i = N - 1; i >= 0; i--)
+        {
+            double sum = 0.0;
+            for (int j = i + 1; j < N; j++)
+                sum += A[i][j] * solution[j];
+
+            solution[i] = (B[i] - sum) / A[i][i];
+        }
+        printSolution(solution);
+        System.out.print("Решение: ");
+        System.out.print(Math.exp(solution[0]) + "*exp(");
+        for (int z = 1; z < solution.length; z++) {
+            if (z == 1){
+                System.out.print(solution[z]+ "x" + z);
+            }
+            else {
+                if (solution[z] >= 0) {
+                    System.out.print(" + " + solution[z]+ "x" + z);
+                } else {
+                    System.out.print(" " + solution[z] + "x" + z);
+                }
+            }
+        }
+        System.out.print(")");
+    }
+
+
+    public static void grad(double[][] matrixErr, int size_y, int size_x, int countX){
+        double[][] matrixDerivate = new double[size_y][size_x];
+        int index = 0;
+        double lineSum = 0;
+        while (index < countX) {
+
+            for (int j = 0; j < size_x; j++) {
+                lineSum = 0;
+                for (int k = 0; k < size_y; k++) {
+                    lineSum += 2 * matrixErr[k][index] * matrixErr[k][j];
+                }
+                matrixDerivate[index][j] = lineSum;
+            }
+            index++;
+        }
+        double[][] matrixTemp = new double[size_y][size_y];
+        double[] vectResTemp = new double[size_y];
+        for (int a = 0; a < size_y; a++) {
+            for (int b = 0; b < size_y; b++) {
+                matrixTemp[a][b] = matrixDerivate[a][b];
+            }
+        }
+        for (int e = 0; e < size_y; e++) {
+            vectResTemp[e] = matrixDerivate[e][size_x - 1];
+        }
+        System.out.println();
+        for (int z = 0; z < size_y; z++) {
+            for (int x = 0; x < size_x; x++) {
+                if (x >= size_y){
+                    System.out.print("= " + vectResTemp[z]);
+                }
+                else{
+                    if (x == 0){
+                        if(matrixTemp[z][x] >= 0) {
+                            System.out.print(matrixTemp[z][x] + "a" + x);
+                        }
+                        else{
+                            System.out.print(matrixTemp[z][x] + "a" + x);
+                        }
+                    }
+                    else {
+                        if (matrixTemp[z][x] >= 0) {
+                            System.out.print(" + " + matrixTemp[z][x] + "a" + x);
+                        } else {
+                            System.out.print(" - " + matrixTemp[z][x] + "a" + x);
+                        }
+                    }
+                }
+            }
+            System.out.println();
+        }
+        solve(matrixTemp, vectResTemp);
+    }
+    public static void errFuncPrint(double[][] impacts, double[] outImpacts, int countX){
+        double[][] matrixErr = new double[impacts.length + 1][impacts.length + 2];
+        for (int j = 0; j < impacts.length + 1; j++) {
+            matrixErr[j][0] = 1.0;
+        }
+        for (int i = 0; i < impacts.length + 1; i++) {
+            System.out.print("(a0");
+            for (int j = 0; j < impacts.length; j++) {
+                System.out.print(" + " + (int)impacts[j][i] + "a" + (j + 1));
+                matrixErr[i][j + 1] = impacts[j][i];
+            }
+            System.out.print("-" + String.format("%.3f", outImpacts[i]) + ")^2");
+            matrixErr[i][impacts.length + 1] = outImpacts[i];
+            if (i < outImpacts.length - 1){
+                System.out.print(" + ");
+            }
+        }
+        grad(matrixErr, impacts.length + 1, impacts.length + 2, countX);
+    }
+    public static void main(String[] args) {
+        int countX = 0;
+        int countN = 0;
+        System.out.println("Введите количество X: ");
+        Scanner scanner = new Scanner(System.in);
+        countX = scanner.nextInt();
+        System.out.println("Введите количество экспериментов N: ");
+        countN = scanner.nextInt();
+        double[][] impacts = new double[countX][countN];
+        double[] outImpacts = new double[countN];
+        for (int i = 0; i < countX; i++) {
+            System.out.println("Введите экспериментальные данные для первого входного воздействия (X" + i + "): ");
+            for (int j = 0; j < countN; j++) {
+                impacts[i][j] = scanner.nextDouble();
+            }
+        }
+        System.out.println("Введите экспериментальные данные для выходного воздействия: ");
+        for (int y = 0; y < countN; y++) {
+            outImpacts[y] = scanner.nextFloat();
+        }
+        for (int z = 0; z < countX; z++) {
+            System.out.print("|X" + z + "| ");
+            for (int x = 0; x < countN; x++) {
+                System.out.print(impacts[z][x] + "|");
+            }
+            System.out.println();
+        }
+        System.out.print("|Y|");
+        for (int p = 0; p < outImpacts.length; p++) {
+            System.out.print(outImpacts[p] + "|");
+        }
+        System.out.println();
+        double[] outNewImpacts = new double[countN];
+        for (int q = 0; q < countN; q++) {
+            outNewImpacts[q] = Math.log(outImpacts[q]);
+        }
+        // Составим функцию ошибки
+        errFuncPrint(impacts, outNewImpacts, countX + 1);
+    }
+}
